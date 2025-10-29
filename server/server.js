@@ -229,11 +229,13 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+/*app.listen(PORT, () => {
   console.log(`
 🌟 DreamWeavers server running!
 🚀 URL: http://localhost:${PORT}
 🔒 Mode: ${isDev ? 'development' : 'production'}
 ✨ Static files: ${path.join(__dirname, 'public')}
   `);
-});
+});*/
+
+module.exports = app;

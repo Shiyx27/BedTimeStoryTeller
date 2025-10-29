@@ -935,4 +935,3 @@ document.addEventListener('DOMContentLoaded', () => {
     .getElementById('closePastBtn')
     .addEventListener('click', closePastStories);
 });
-
