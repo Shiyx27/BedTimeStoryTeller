@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamWeavers ✨ — Create Your Own Magical Story</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- External libs: confetti + jsPDF -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <!-- Onboarding overlay (first-time users) -->
+    <div id="onboard" class="modal onboard hidden" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Welcome to DreamWeavers ✨</h3>
+                <button id="closeOnboard" class="btn-icon">✖️</button>
+            </div>
+            <div class="modal-body">
+                <p>Make a story by entering a name, choosing a world, and tapping <strong>Create My Magical Story</strong>! We'll auto-generate a picture and read the story aloud if you want.</p>
+                <ul>
+                    <li>Pick a mood (Adventure, Whimsical, Mysterious)</li>
+                    <li>Click the star to favorite stories</li>
+                    <li>Use Share → Save as PDF or copy the text</li>
+                </ul>
+                <div style="text-align:center;margin-top:12px"><button id="gotItBtn" class="btn-primary">Got it — let's play!</button></div>
+            </div>
+        </div>
+    </div>
+    <header>
+        <div class="header-inner">
+            <div class="logo">✨ DreamWeavers</div>
+            <div><button id="viewPastBtn" class="btn-secondary">📚 View Past Stories</button></div>
+        </div>
+    </header>
+    <div class="container">
+        <main>
+            <section class="card">
+                <h1>✨ Create Your Magical Adventure ✨</h1>
+                <p class="intro-text">Enter your name and choose a magical world to begin your unique story journey!</p>
+                <form id="storyForm">
+                    <div class="form-group">
+                        <label for="userName">Your Hero's Name</label>
+                        <input id="userName" type="text" placeholder="Enter your magical name..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userWorld">Choose Your World</label>
+                        <select id="userWorld">
+                            <option value="">Select a magical realm...</option>
+                            <option value="Magical Castle">🏰 Enchanted Castle</option>
+                            <option value="Space Station">🚀 Cosmic Space Station</option>
+                            <option value="Secret Garden">🌸 Mystical Garden</option>
+                            <option value="Ocean World">🌊 Underwater Kingdom</option>
+                            <option value="Dragon Realm">🐉 Dragon Realm</option>
+                            <option value="Crystal Cave">💎 Crystal Caves</option>
+                            <option value="Cloud City">☁️ Cloud City</option>
+                            <option value="Custom">✨ Create Your Own World...</option>
+                        </select>
+                        <input id="userWorldCustom" type="text" class="hidden" placeholder="Describe your magical world...">
+                    </div>
+                    <div class="form-group mood-selector">
+                        <label>Story Mood</label>
+                        <div class="mood-options">
+                            <label class="mood-option">
+                                <input type="radio" name="mood" value="adventure" checked>
+                                <span>🗡️ Adventure</span>
+                            </label>
+                            <label class="mood-option">
+                                <input type="radio" name="mood" value="whimsical">
+                                <span>🦋 Whimsical</span>
+                            </label>
+                            <label class="mood-option">
+                                <input type="radio" name="mood" value="mysterious">
+                                <span>🔮 Mysterious</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary pulse-animation">✨ Create My Magical Story ✨</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="storyDisplay" class="card story-card hidden">
+                <div class="story-header">
+                    <h2 id="storyTitle" class="magical-text"></h2>
+                    <div class="story-actions">
+                        <button id="favoriteBtn" class="btn-secondary btn-icon" title="Favorite">⭐</button>
+                            <button id="readAloudBtn" class="btn-secondary" title="Read aloud">🔊 Read Aloud</button>
+                        <button id="shareStoryBtn" class="btn-secondary">✨ Share</button>
+                    </div>
+                </div>
+                <div class="story-image-container">
+                    <img id="storyImage" class="story-image hidden" alt="Story illustration" src="">
+                    <button id="generateImageBtn" class="btn-secondary">🎨 Generate Story Image</button>
+                </div>
+                <div id="storyBody" class="story-content"></div>
+                <div class="moral"></div>
+                <div class="story-footer">
+                    <button id="newStoryBtn" class="btn-primary">✨ Create Another Story</button>
+                    <button id="regenerateBtn" class="btn-secondary">🔄 Try Again</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="pastModal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>✨ Your Story Collection 📚</h3>
+                <button id="closePastBtn" class="btn-icon">✖️</button>
+            </div>
+            <div class="modal-tabs">
+                <button class="tab-btn active" data-tab="recent">Recent Stories</button>
+                <button class="tab-btn" data-tab="favorites">Favorites ⭐</button>
+            </div>
+            <div id="pastContent" class="modal-body">
+                <div class="stories-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="shareModal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>✨ Share Your Story</h3>
+                <button class="btn-icon close-modal">✖️</button>
+            </div>
+            <div class="modal-body">
+                <div class="share-options">
+                    <button class="share-btn" data-platform="facebook">📘 Facebook</button>
+                    <button class="share-btn" data-platform="twitter">🐦 Twitter</button>
+                    <button class="share-btn copy-link">📋 Copy Link</button>
+                    <button class="share-btn download-pdf">📄 Save as PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

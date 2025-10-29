@@ -1,7 +1,0 @@
-/* small custom styles */
-body { -webkit-font-smoothing: antialiased; }
-.loader { box-shadow: inset 0 0 10px rgba(255,255,255,0.2); }
-.prose p { margin-bottom: 1rem; }
-
-/* rounded cover shadow */
-#cover-img { border: 8px solid rgba(255,255,255,0.6); }

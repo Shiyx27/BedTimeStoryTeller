@@ -1,0 +1,13 @@
+node_modules/
+/.env
+server/.env
+.DS_Store
+.vscode/
+dist/
+npm-debug.log*
+.env.local
+.env.*.local// gitignore for DreamWeavers
+node_modules/
+.env
+.DS_Store
+*.log
