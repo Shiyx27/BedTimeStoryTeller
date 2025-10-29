@@ -50,10 +50,10 @@ The app consists of:
 
 DreamWeavers Server
 ====================
+![inkhearts](https://github.com/user-attachments/assets/552b115e-fb87-46af-9bc2-ac9c639c61b6)
 
 # DreamWeavers - AI Story Teller for Kids
 
-![DreamWeavers Hero Image](https://kids-stories-phi.vercel.app/assets/hero-bg.png)
 
 **Live Demo:** [**https://kids-stories-phi.vercel.app/**](https://kids-stories-phi.vercel.app/)
 
