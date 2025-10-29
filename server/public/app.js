@@ -5,7 +5,7 @@
 // It's needed for Twitter, LinkedIn, etc. to create share links.
 // Example: 'https://dreamweavers.vercel.app'
 // ===================================================================
-const DEPLOYED_URL = 'https://bed-time-story-teller-eta.vercel.app/';
+const DEPLOYED_URL = 'https://kids-stories-phi.vercel.app/';
 // ===================================================================
 
 // Configuration
