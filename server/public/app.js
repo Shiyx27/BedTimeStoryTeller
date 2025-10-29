@@ -25,12 +25,17 @@ const loadFromStorage = (k) => {
   }
 };
 
-// Modal helpers
+// Modal helpers with focus management
+let _lastFocused = null;
 const showModal = (id) => {
   const m = document.getElementById(id);
   if (!m) return;
+  _lastFocused = document.activeElement;
   m.classList.add('active');
   document.body.style.overflow = 'hidden';
+  // focus first focusable element inside modal
+  const focusable = m.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (focusable) { focusable.focus(); }
 };
 
 const hideModal = (id) => {
@@ -38,6 +43,8 @@ const hideModal = (id) => {
   if (!m) return;
   m.classList.remove('active');
   document.body.style.overflow = 'auto';
+  // return focus
+  try{ if (_lastFocused) _lastFocused.focus(); }catch(e){}
 };
 
 // Debounce helper
@@ -48,6 +55,59 @@ const debounce = (fn, wait=250) => {
     t = setTimeout(() => fn.apply(this,args), wait);
   };
 };
+
+// --- Particles & visual delight (tsParticles) ---
+async function initParticles(){
+  try{
+    if (!window.tsParticles) return;
+    await tsParticles.load('particles', {
+      fpsLimit: 30,
+      background: { color: { value: 'transparent' } },
+      particles: {
+        number: { value: 22, density: { enable: true, area: 800 } },
+        color: { value: ['#FFD1DC','#A8EDEa','#FFD98E','#C6B8FF'] },
+        shape: { type: 'circle' },
+        opacity: { value: 0.85, random: true },
+        size: { value: { min: 6, max: 18 }, random: true },
+        move: { enable: true, speed: 0.6, direction: 'none', outMode: 'bounce' }
+      },
+      interactivity: { detectsOn: 'window', events: { onHover: { enable: false }, onClick: { enable: false } } },
+      detectRetina: true
+    });
+  }catch(e){ console.warn('particles init failed', e); }
+}
+
+// --- Simple WebAudio sound effects ---
+const AudioSFX = {
+  ctx: null,
+  init(){ if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+  playTone(freq=440, duration=0.11, type='sine'){
+    try{
+      this.init();
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.12, this.ctx.currentTime + 0.01);
+      o.connect(g); g.connect(this.ctx.destination);
+      o.start();
+      o.stop(this.ctx.currentTime + duration);
+      g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+    }catch(e){ /* ignore */ }
+  },
+  click(){ this.playTone(880,0.08,'sine'); },
+  success(){ this.playTone(520,0.26,'sawtooth'); },
+  pop(){ this.playTone(660,0.12,'triangle'); }
+};
+
+// small helper to attach tiny click sound to element
+function attachSfx(el, type='click'){
+  if (!el) return;
+  el.addEventListener('pointerdown', () => {
+    try{ if (type === 'success') AudioSFX.success(); else if (type === 'pop') AudioSFX.pop(); else AudioSFX.click(); }catch(e){}
+  }, {passive:true});
+}
 
 // Simple fallback story generator (safeguard)
 function fallbackLocalStory({userName, userWorld}) {
@@ -109,6 +169,18 @@ function saveStory(obj) {
   }
 }
 
+// Update last saved story to include generated image url (if any)
+function attachImageToLastSaved(url){
+  try{
+    const raw = localStorage.getItem(CONFIG.STORAGE_KEYS.STORIES);
+    const arr = raw ? JSON.parse(raw) : [];
+    if (arr.length === 0) return;
+    // Attach to the most recent story (index 0)
+    arr[0].image = url;
+    localStorage.setItem(CONFIG.STORAGE_KEYS.STORIES, JSON.stringify(arr));
+  }catch(e){ console.warn('attachImage failed', e); }
+}
+
 // Display utilities
 function displayStory(obj) {
   const titleEl = document.getElementById('storyTitle');
@@ -135,6 +207,8 @@ function displayStory(obj) {
   const disp = document.getElementById('storyDisplay');
   disp.classList.remove('hidden');
   disp.style.display = 'block';
+  // animate card entrance for delight
+  try{ const card = disp; card.classList.add('enter'); setTimeout(()=>card.classList.remove('enter'), 600); }catch(e){}
   disp.scrollIntoView({behavior:'smooth'});
   // fire confetti for extra delight
   try { if (window.confetti) confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); } catch(e){}
@@ -143,17 +217,45 @@ function displayStory(obj) {
 }
 
 // Auto image generation helper (can be called after story created)
-async function autoGenerateImage(titlePrompt){
+async function autoGenerateImage(titlePrompt) {
   const imgEl = document.getElementById('storyImage');
   const genBtn = document.getElementById('generateImageBtn');
-  const prompt = titlePrompt ? `${titlePrompt} — whimsical children book illustration, colorful, soft, kid-friendly` : 'Cute children book illustration';
-  if (genBtn) { genBtn.disabled = true; genBtn.textContent = 'Generating image...'; }
-  try{
-    const resp = await fetch('/api/cover', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt }) });
+  const prompt = titlePrompt
+    ? `${titlePrompt} — whimsical children book illustration, colorful, soft, kid-friendly, high detail, vibrant colors, fantasy art style`
+    : 'Cute children book illustration, vibrant colors, fantasy art style';
+
+  if (genBtn) {
+    genBtn.disabled = true;
+    genBtn.textContent = 'Generating image...';
+  }
+
+  try {
+    const resp = await fetch('/api/cover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
     const j = await resp.json();
-    if (j && j.url){ imgEl.src = j.url; imgEl.classList.remove('hidden'); }
-  } catch(e){ console.warn('auto image failed', e); }
-  finally{ if (genBtn) { genBtn.disabled = false; genBtn.textContent = '🎨 Generate Story Image'; } }
+
+    if (j && j.url) {
+      imgEl.src = j.url;
+      imgEl.classList.remove('hidden');
+
+      // Attach image to the most recently saved story for richer exports and favorites
+      try {
+        attachImageToLastSaved(j.url);
+      } catch (e) {
+        console.warn('Failed to attach image to story:', e);
+      }
+    }
+  } catch (e) {
+    console.warn('Image generation failed:', e);
+  } finally {
+    if (genBtn) {
+      genBtn.disabled = false;
+      genBtn.textContent = '🎨 Generate Story Image';
+    }
+  }
 }
 
 // Past stories modal
@@ -194,6 +296,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const n = loadFromStorage(CONFIG.STORAGE_KEYS.NAME);
   if (n) nameInput.value = n;
 
+  // Hero CTA buttons
+  const heroCreate = document.getElementById('heroCreate');
+  const heroExplore = document.getElementById('heroExplore');
+  if (heroCreate) heroCreate.addEventListener('click', () => {
+    // focus form name and scroll into view
+    nameInput.focus();
+    const rect = document.querySelector('.app') ? document.querySelector('.app').offsetTop : 0;
+    window.scrollTo({ top: rect - 20, behavior: 'smooth' });
+  });
+  if (heroExplore) heroExplore.addEventListener('click', () => {
+    viewPastStories();
+    document.getElementById('pastModal').classList.add('active');
+  });
+
+  // attach small sfx to hero buttons
+  attachSfx(heroCreate, 'click');
+  attachSfx(heroExplore, 'click');
+
   // Auto-save name changes
   nameInput.addEventListener('input', debounce(e => 
     saveToStorage(CONFIG.STORAGE_KEYS.NAME, e.target.value), 300
@@ -225,12 +345,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const mood = moodEl ? moodEl.value : 'adventure';
 
     const input = { userName, userWorld, mood };
-    // show loading
-    document.getElementById('storyBody').innerHTML = '';
-    const loading = document.createElement('div');
-    loading.className = 'loading';
-    loading.textContent = 'Weaving your story...';
-    document.getElementById('storyBody').appendChild(loading);
+  // show skeleton loading
+  const bodyEl = document.getElementById('storyBody');
+  bodyEl.innerHTML = '';
+  const sTitle = document.createElement('div'); sTitle.className = 'skeleton title';
+  const s1 = document.createElement('div'); s1.className = 'skeleton line';
+  const s2 = document.createElement('div'); s2.className = 'skeleton line';
+  const s3 = document.createElement('div'); s3.className = 'skeleton line';
+  bodyEl.appendChild(sTitle); bodyEl.appendChild(s1); bodyEl.appendChild(s2); bodyEl.appendChild(s3);
 
     const res = await fetchStory(input);
 
@@ -247,6 +369,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // Image generation: call server /api/cover
   const genImgBtn = document.getElementById('generateImageBtn');
   const imgEl = document.getElementById('storyImage');
+  // parallax layer reference
+  const parallaxLayer = document.querySelector('.parallax-layer');
+  // small parallax handler
+  function handleParallax(ev){
+    try{
+      const bounds = document.body.getBoundingClientRect();
+      const x = (ev.clientX - bounds.left) / bounds.width - 0.5;
+      const y = (ev.clientY - bounds.top) / bounds.height - 0.5;
+      if (parallaxLayer) parallaxLayer.style.transform = `translate(${x * 8}px, ${y * 6}px)`;
+    }catch(e){}
+  }
+  window.addEventListener('pointermove', handleParallax);
   if (genImgBtn) {
     genImgBtn.addEventListener('click', async () => {
       // Use story title as prompt if available
@@ -262,6 +396,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (j && j.url) {
           imgEl.src = j.url;
           imgEl.classList.remove('hidden');
+          // persist into latest story if present
+          try{ attachImageToLastSaved(j.url); }catch(e){/* ignore */}
         } else {
           alert('Image generation failed');
         }
@@ -271,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } finally {
         genImgBtn.disabled = false;
         genImgBtn.textContent = '🎨 Generate Story Image';
+        attachSfx(genImgBtn,'pop');
       }
     });
   }
@@ -318,6 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('dw_favorites', JSON.stringify(arr));
       showToast(msg);
       try{ if (window.confetti) confetti({ particleCount: 40, spread: 50, origin: { y: 0.6 } }); }catch(e){}
+      attachSfx(favBtn,'success');
     });
   }
 
@@ -416,11 +554,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
     });
+    // attach sfx to share buttons
+    attachSfx(b,'click');
   });
 
   // PDF download (uses jspdf UMD)
   document.querySelectorAll('.download-pdf').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       try{
         const { jsPDF } = window.jspdf || {};
         if (!jsPDF) return showToast('PDF library missing');
@@ -428,14 +568,62 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = Array.from(document.querySelectorAll('#storyBody p')).map(p=>p.innerText).join('\n\n');
         const doc = new jsPDF({ unit: 'pt', format: 'a4' });
         const margin = 40;
-        doc.setFontSize(20);
-        doc.text(title, margin, 60);
-        doc.setFontSize(12);
-        const lines = doc.splitTextToSize(body, 520);
-        doc.text(lines, margin, 100);
+        // Title page
+        doc.setFillColor(250, 250, 255);
+        doc.rect(0,0, doc.internal.pageSize.getWidth(), doc.internal.pageSize.getHeight(), 'F');
+        doc.setFontSize(34);
+        doc.setTextColor(58,47,107);
+        doc.text(title, doc.internal.pageSize.getWidth()/2, 160, { align: 'center' });
+        doc.setFontSize(14);
+        const author = (document.getElementById('userName')||{}).value || '';
+        if (author) doc.text(`by ${author}`, doc.internal.pageSize.getWidth()/2, 200, { align: 'center' });
+        doc.setFontSize(10);
+        doc.setTextColor(110,118,130);
+        doc.text(new Date().toLocaleString(), doc.internal.pageSize.getWidth()/2, 228, { align: 'center' });
+        // try to add a hero image on second page
+        doc.addPage();
+        const imgEl = document.getElementById('storyImage');
+        if (imgEl && imgEl.src && !imgEl.classList.contains('hidden')){
+          try{
+            const resp = await fetch(imgEl.src);
+            const blob = await resp.blob();
+            const dataUrl = await new Promise((resolve, reject) => {
+              const r = new FileReader();
+              r.onload = () => resolve(r.result);
+              r.onerror = reject;
+              r.readAsDataURL(blob);
+            });
+            const imgProps = doc.getImageProperties(dataUrl);
+            const pdfWidth = doc.internal.pageSize.getWidth() - margin*2;
+            const ratio = imgProps.width / imgProps.height;
+            const imgHeight = Math.min(pdfWidth / ratio, 320);
+            doc.addImage(dataUrl, 'JPEG', margin, 40, pdfWidth, imgHeight);
+            // caption
+            doc.setFontSize(12);
+            doc.setTextColor(88,96,120);
+            doc.text((document.getElementById('storyTitle')||{}).textContent || '', margin + 6, 50 + imgHeight);
+            // story text after image
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.setTextColor(28,32,51);
+            const lines = doc.splitTextToSize(body, doc.internal.pageSize.getWidth() - margin*2);
+            doc.text(lines, margin, 80);
+          }catch(e){
+            // fallback to standard single-page text
+            doc.setFontSize(14);
+            const lines = doc.splitTextToSize(body, doc.internal.pageSize.getWidth() - margin*2);
+            doc.text(lines, margin, 80);
+          }
+        } else {
+          // no image: put story on page 2
+          doc.setFontSize(14);
+          const lines = doc.splitTextToSize(body, doc.internal.pageSize.getWidth() - margin*2);
+          doc.text(lines, margin, 80);
+        }
         doc.save(`${title.replace(/[^a-z0-9]+/gi,'_')}.pdf`);
         showToast('PDF downloaded');
       }catch(e){ console.warn('pdf err',e); showToast('PDF generation failed'); }
+      attachSfx(btn,'success');
     });
   });
 
@@ -449,6 +637,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (gotItBtn) gotItBtn.addEventListener('click', () => { onboard.classList.add('hidden'); onboard.classList.remove('active'); localStorage.setItem('dw_seen_onboard','1'); });
   if (newBtn) newBtn.addEventListener('click', () => { document.getElementById('storyDisplay').style.display = 'none'; window.scrollTo({top:0,behavior:'smooth'}); });
   if (regenBtn) regenBtn.addEventListener('click', () => form.requestSubmit());
+
+  // initialize particles and audio
+  try{ initParticles(); }catch(e){}
+  try{ AudioSFX.init(); }catch(e){}
+
+  // attach sfx to common interactive elements
+  attachSfx(document.getElementById('storyForm') , 'click');
+  attachSfx(document.getElementById('readAloudBtn'), 'click');
+  attachSfx(document.getElementById('favoriteBtn'), 'pop');
+  attachSfx(document.getElementById('generateImageBtn'), 'pop');
+
+  // keyboard accessibility: close modals with ESC
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { document.querySelectorAll('.modal.active').forEach(m=>m.classList.remove('active')); document.body.style.overflow='auto'; } });
 
   // Close share modal buttons
   document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', () => { hideModal('shareModal'); }));
