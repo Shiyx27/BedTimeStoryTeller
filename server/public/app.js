@@ -15,11 +15,10 @@ const CONFIG = {
     NAME: 'dw_name',
     STORIES: 'dw_stories',
     THEME: 'dw_theme',
-    FONT_SIZE: 'dw_font_size' // New key for font size
+    FONT_SIZE: 'dw_font_size'
   },
   MAX_STORIES: 10,
-  TYPEWRITER_SPEED_MS: 20, // Faster typewriter
-  // NEW: Theme definitions
+  TYPEWRITER_SPEED_MS: 20,
   THEMES: [
     { name: 'light', icon: '☀️' },
     { name: 'dark', icon: '🌙' },
@@ -27,9 +26,7 @@ const CONFIG = {
     { name: 'fairy', icon: '🧚' },
     { name: 'underwater', icon: '🌊' }
   ],
-  // NEW: Font size definitions
   FONT_SIZES: ['small', 'medium', 'large'],
-  // NEW: Magic & Dictionary Words
   MAGIC_WORDS: ['magic', 'magical', 'wonder', 'wonderful', 'enchanted', 'sparkle', 'dream', 'gleam', 'glow', 'glowing', 'fairy', 'dragon', 'wizard', 'spell', 'potion'],
   DICTIONARY: {
     'adventure': 'An exciting and unusual journey or experience.',
@@ -93,34 +90,63 @@ const debounce = (fn, wait = 250) => {
   };
 };
 
-// --- Particles & visual delight (tsParticles) ---
-async function initParticles() {
-  try {
-    if (!window.tsParticles) return;
-    await tsParticles.load('particles', {
-      fpsLimit: 30,
-      background: { color: { value: 'transparent' } },
-      particles: {
-        number: { value: 22, density: { enable: true, area: 800 } },
-        color: { value: ['#FFD1DC', '#A8EDEa', '#FFD98E', '#C6B8FF'] },
-        shape: { type: 'circle' },
-        opacity: { value: 0.85, random: true },
-        size: { value: { min: 6, max: 18 }, random: true },
-        move: {
-          enable: true,
-          speed: 0.6,
-          direction: 'none',
-          outMode: 'bounce',
-        },
-      },
-      interactivity: {
-        detectsOn: 'window',
-        events: { onHover: { enable: false }, onClick: { enable: false } },
-      },
-      detectRetina: true,
-    });
-  } catch (e) { console.warn('particles init failed', e); }
+// --- REMOVED: tsParticles init ---
+
+// --- NEW: Stardust Cursor Trail ---
+function initStardustTrail() {
+  const trailContainer = document.getElementById('stardust-trail');
+  if (!trailContainer) return;
+  
+  let lastPos = { x: 0, y: 0 };
+  let isMoving = false;
+  
+  window.addEventListener('pointermove', (e) => {
+    if (Math.abs(e.clientX - lastPos.x) < 5 && Math.abs(e.clientY - lastPos.y) < 5) {
+      isMoving = false;
+      return;
+    }
+    isMoving = true;
+    lastPos = { x: e.clientX, y: e.clientY };
+
+    const star = document.createElement('div');
+    star.className = 'stardust';
+    const size = Math.random() * 5 + 2; // 2px to 7px
+    star.style.width = `${size}px`;
+    star.style.height = `${size}px`;
+    star.style.left = `${e.clientX}px`;
+    star.style.top = `${e.clientY}px`;
+    
+    trailContainer.appendChild(star);
+    
+    setTimeout(() => {
+      star.remove();
+    }, 800); // Match animation duration
+  });
 }
+
+// --- NEW: 3D Tilt Effect for Buttons ---
+function initTiltEffect() {
+  const tiltElements = document.querySelectorAll('[data-tilt]');
+  tiltElements.forEach(el => {
+    el.addEventListener('mousemove', (e) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      
+      const rotateY = (x / rect.width) * 20; // Max 10deg rotation
+      const rotateX = (y / rect.height) * -20; // Max -10deg rotation
+      
+      el.style.transition = 'transform 0.1s ease-out';
+      el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+    });
+    
+    el.addEventListener('mouseleave', () => {
+      el.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
+      el.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+    });
+  });
+}
+
 
 // --- Simple WebAudio sound effects ---
 const AudioSFX = {
@@ -165,7 +191,7 @@ function attachSfx(el, type = 'click') {
   );
 }
 
-// Simple fallback story generator (safeguard)
+// Fallback story generator
 function fallbackLocalStory({ userName, userWorld }) {
   const title = `${userName} in the ${userWorld}`;
   const story = `${userName} had a gentle adventure in ${userWorld}. It was full of wonder, small challenges, kind friends, and a warm ending.`;
@@ -226,9 +252,7 @@ function attachImageToLastSaved(url) {
   } catch (e) { console.warn('attachImage failed', e); }
 }
 
-/**
- * Calculates stats and populates the story.
- */
+// Display story stats (part 1 of display)
 function displayStory(obj) {
   const titleEl = document.getElementById('storyTitle');
   const moralEl = document.querySelector('.moral');
@@ -239,7 +263,7 @@ function displayStory(obj) {
 
   const story = obj.story || '';
   const wordCount = story.split(' ').filter(Boolean).length;
-  const readingTime = Math.max(1, Math.ceil(wordCount / 200)); // Min 1 min
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200));
   const magicalWords = story.toLowerCase().match(new RegExp(CONFIG.MAGIC_WORDS.join('|'), 'gi'))?.length || 0;
   
   statsEl.innerHTML = `
@@ -269,17 +293,13 @@ function displayStory(obj) {
 
   disp.scrollIntoView({ behavior: 'smooth' });
   
-  // Auto-generate image based on story, not title
   const storySnippet = story.split(' ').slice(0, 100).join(' ');
   autoGenerateImage(storySnippet || obj.title || 'Cute children book illustration');
 
   return story;
 }
 
-/**
- * "Magic Typewriter" function
- * Animates text and adds dictionary/magic highlights.
- */
+// "Magic Typewriter" function (part 2 of display)
 async function animateStoryText(storyText) {
   const bodyEl = document.getElementById('storyBody');
   bodyEl.innerHTML = '';
@@ -291,17 +311,15 @@ async function animateStoryText(storyText) {
     const pEl = document.createElement('p');
     const words = pText.split(' ');
     words.forEach(word => {
-      const cleanWord = word.toLowerCase().replace(/[^a-z]/g, ''); // Get clean word
+      const cleanWord = word.toLowerCase().replace(/[^a-z]/g, '');
       const span = document.createElement('span');
       span.className = 'story-word';
       span.textContent = word + ' ';
       
-      // Check for dictionary
       if (CONFIG.DICTIONARY[cleanWord]) {
         span.classList.add('dictionary-word');
         span.dataset.word = cleanWord;
       }
-      // Check for magic word
       else if (CONFIG.MAGIC_WORDS.includes(cleanWord)) {
         span.classList.add('magic-word');
       }
@@ -312,7 +330,6 @@ async function animateStoryText(storyText) {
     bodyEl.appendChild(pEl);
   });
 
-  // Animate each word
   let delay = 0;
   wordSpans.forEach(span => {
     setTimeout(() => {
@@ -322,18 +339,16 @@ async function animateStoryText(storyText) {
     delay += CONFIG.TYPEWRITER_SPEED_MS;
   });
 
-  // Return a promise that resolves when animation is done
   return new Promise(resolve => {
     setTimeout(resolve, delay);
   });
 }
 
 
-// Auto image generation (UPDATED: No title in prompt)
+// Auto image generation
 async function autoGenerateImage(storySnippet) {
   const imgEl = document.getElementById('storyImage');
   const genBtn = document.getElementById('generateImageBtn');
-  // Use story snippet for prompt, not title
   const prompt = `${storySnippet} — whimsical children book illustration, colorful, soft, kid-friendly, high detail, vibrant colors, fantasy art style`;
 
   if (genBtn) {
@@ -390,7 +405,7 @@ function viewPastStories() {
     d.addEventListener('click', () => {
       hideModal('pastModal');
       const storyText = displayStory(s);
-      animateStoryText(storyText); // Animate old story
+      animateStoryText(storyText);
     });
     content.appendChild(d);
   });
@@ -420,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveToStorage(CONFIG.STORAGE_KEYS.THEME, theme.name);
   };
   
-  setTheme(currentThemeIndex); // Set initial theme
+  setTheme(currentThemeIndex);
 
   themeToggle.addEventListener('click', () => {
     currentThemeIndex = (currentThemeIndex + 1) % CONFIG.THEMES.length;
@@ -439,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveToStorage(CONFIG.STORAGE_KEYS.FONT_SIZE, size);
   };
 
-  setFontSize(currentFontIndex); // Set initial font size
+  setFontSize(currentFontIndex);
 
   fontToggleBtn.addEventListener('click', () => {
     currentFontIndex = (currentFontIndex + 1) % CONFIG.FONT_SIZES.length;
@@ -632,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // === NEW: Dictionary Click Listener ===
+  // === Dictionary Click Listener ===
   const storyBody = document.getElementById('storyBody');
   storyBody.addEventListener('click', (e) => {
     if (e.target.classList.contains('dictionary-word')) {
@@ -645,7 +660,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-
 
   // Read aloud
   const readBtn = document.getElementById('readAloudBtn');
@@ -887,7 +901,8 @@ document.addEventListener('DOMContentLoaded', () => {
     regenBtn.addEventListener('click', () => form.requestSubmit());
 
   // Init particles and audio
-  try { initParticles(); } catch (e) {}
+  try { initStardustTrail(); } catch (e) {} // NEW
+  try { initTiltEffect(); } catch (e) {} // NEW
   try { AudioSFX.init(); } catch (e) {}
 
   // Attach final SFX

@@ -10,17 +10,32 @@
     <link rel="stylesheet" href="styles.css">
     <!-- External libs: confetti + jsPDF -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.0/tsparticles.bundle.min.js" defer></script>
+    <!-- REMOVED: tsParticles -->
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
     <script src="app.js" defer></script>
 </head>
 <!-- Body will have data-theme and data-font-size -->
 <body>
-    <div id="particles"></div>
+    <!-- NEW: Stardust Cursor -->
+    <div id="stardust-trail"></div>
+    
+    <!-- NEW: Animated Bubbles Background -->
+    <div class="bubbles-bg">
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+    
     <header class="header">
         <h1 class="header-title">DreamWeavers ✨</h1>
         <p class="header-subtitle">Create Your Own Magical Story</p>
-        <!-- UPDATED: Theme Toggle Button -->
         <button id="themeToggle" class="theme-toggle" title="Change Magic Theme">
             <span>☀️</span>
         </button>
@@ -32,8 +47,9 @@
             <div class="parallax-layer-hero" id="parallax-2"></div>
             <h2 class="hero-title">Let Your Imagination Soar</h2>
             <p class="hero-description">Enter your name, choose a magical world, and watch your story come to life!</p>
-            <button class="btn-primary" id="heroCreate">✨ Create a Story</button>
-             <button class="btn-secondary" id="heroExplore">📚 View My Stories</button>
+            <!-- UPDATED: Added data-tilt for 3D effect -->
+            <button class="btn-primary" id="heroCreate" data-tilt>✨ Create a Story</button>
+            <button class="btn-secondary" id="heroExplore" data-tilt>📚 View My Stories</button>
         </section>
 
         <section class="form-section card">
@@ -65,7 +81,7 @@
                             <input type="radio" id="world_ocean" name="userWorld" value="Underwater Kingdom">
                             <label for="world_ocean">
                                 <span class="emoji">🐠</span>
-                                <span class="text">Underwater Kingdom</span>
+                                <span class="text">Underwater World</span>
                             </label>
                         </div>
                         <div class="choice-option">
@@ -133,7 +149,6 @@
         </section>
     </main>
 
-    <!-- UPDATED: Story Container (Wider) -->
     <div class="story-container">
         <section id="storyDisplay" class="story-display hidden card">
             <div class="story-header">
@@ -148,7 +163,6 @@
             <div class="story-actions">
                 <button id="readAloudBtn" title="Read Aloud" class="btn-icon">🔊</button>
                 <button id="favoriteBtn" title="Favorite" class="btn-icon">⭐</button>
-                <!-- NEW: Font Size Toggle -->
                 <button id="fontToggleBtn" title="Change Font Size" class="btn-icon btn-font-toggle">A</button>
                 <button id="shareStoryBtn" title="Share" class="btn-icon">📤</button>
                 <button id="saveStoryBtn" title="Download PDF" class="btn-icon download-pdf">📄</button>
@@ -211,7 +225,6 @@
         </div>
     </div>
     
-    <!-- NEW: Dictionary Modal -->
     <div id="dictionaryModal" class="modal">
          <div class="modal-card modal-dictionary">
             <div class="modal-header">
