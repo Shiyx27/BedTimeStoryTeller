@@ -8,20 +8,28 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Luckiest+Guy&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <!-- External libs: confetti + jsPDF -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.0/tsparticles.bundle.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
     <script src="app.js" defer></script>
 </head>
+<!-- Body will have data-theme and data-font-size -->
 <body>
     <div id="particles"></div>
     <header class="header">
         <h1 class="header-title">DreamWeavers ✨</h1>
         <p class="header-subtitle">Create Your Own Magical Story</p>
+        <!-- UPDATED: Theme Toggle Button -->
+        <button id="themeToggle" class="theme-toggle" title="Change Magic Theme">
+            <span>☀️</span>
+        </button>
     </header>
 
     <main class="main-container">
         <section class="hero-section">
+            <div class="parallax-layer-hero" id="parallax-1"></div>
+            <div class="parallax-layer-hero" id="parallax-2"></div>
             <h2 class="hero-title">Let Your Imagination Soar</h2>
             <p class="hero-description">Enter your name, choose a magical world, and watch your story come to life!</p>
             <button class="btn-primary" id="heroCreate">✨ Create a Story</button>
@@ -32,12 +40,12 @@
             <form id="storyForm" class="story-form">
                 
                 <div class="field">
-                    <label for="userName">1. Your Name</label>
-                    <input type="text" id="userName" name="userName" placeholder="Enter your name" required>
+                    <label for="userName"><span class="step-bubble">1</span> Your Name</label>
+                    <input type="text" id="userName" name="userName" placeholder="e.g., Lily or Tom" required>
                 </div>
 
                 <div class="field">
-                    <label>2. Choose a Magical World</label>
+                    <label><span class="step-bubble">2</span> Choose a Magical World</label>
                     <div class="choice-grid" id="world-grid">
                         <div class="choice-option">
                             <input type="radio" id="world_forest" name="userWorld" value="Enchanted Forest" checked>
@@ -79,7 +87,7 @@
                 </div>
 
                 <div class="field">
-                    <label>3. Pick a Story Mood</label>
+                    <label><span class="step-bubble">3</span> Pick a Story Mood</label>
                     <div class="choice-grid" id="mood-grid">
                         <div class="choice-option">
                             <input type="radio" id="mood_adventure" name="userMood" value="adventure" checked>
@@ -119,10 +127,14 @@
                     </div>
                     <input type="text" id="customMood" name="customMood" placeholder="Enter your own story mood" class="hidden custom-input">
                 </div>
+
                 <button type="submit" class="btn-primary btn-submit">✨ Create My Magical Story</button>
             </form>
         </section>
+    </main>
 
+    <!-- UPDATED: Story Container (Wider) -->
+    <div class="story-container">
         <section id="storyDisplay" class="story-display hidden card">
             <div class="story-header">
                 <h2 id="storyTitle" class="story-title"></h2>
@@ -130,32 +142,47 @@
                 <div class="story-image-wrapper">
                     <img id="storyImage" src="" alt="Generated story illustration" class="story-image hidden" />
                 </div>
-                <button id="generateImageBtn" class="btn-secondary">🎨 Generate Story Image</button>
+                <button id="generateImageBtn" class="btn-secondary">🎨 Re-Generate Image</button>
             </div>
             
             <div class="story-actions">
                 <button id="readAloudBtn" title="Read Aloud" class="btn-icon">🔊</button>
                 <button id="favoriteBtn" title="Favorite" class="btn-icon">⭐</button>
+                <!-- NEW: Font Size Toggle -->
+                <button id="fontToggleBtn" title="Change Font Size" class="btn-icon btn-font-toggle">A</button>
                 <button id="shareStoryBtn" title="Share" class="btn-icon">📤</button>
                 <button id="saveStoryBtn" title="Download PDF" class="btn-icon download-pdf">📄</button>
             </div>
+            
+            <hr class="magic-divider">
+
+            <div id="storyStats" class="story-stats">
+                <!-- Skeleton loader will go here first -->
+            </div>
+
+            <hr class="magic-divider">
 
             <div class="story-content">
-                <div id="storyBody"></div>
+                <div id="storyBody">
+                    <!-- Typewriter effect will populate this -->
+                </div>
                 <div class="moral"></div>
             </div>
             
+            <hr class="magic-divider">
+
             <div class="story-footer">
-                <button id="regenerateBtn" class="btn-secondary">🔄 Try Again</button>
-                <button id="newStoryBtn" class="btn-primary">✨ Create Another Story</button>
+                <button id="regenerateBtn" class="btn-secondary">🔄 Re-Create Story</button>
+                <button id="newStoryBtn" class="btn-primary">✨ Create New Story</button>
             </div>
         </section>
-    </main>
+    </div>
 
     <footer class="footer">
-        <p>© 2025 DreamWeavers. All rights reserved.</p>
+        <p>© 2025 DreamWeavers. Made with ✨</p>
     </footer>
 
+    <!-- Modals -->
     <div id="pastModal" class="modal">
         <div class="modal-card">
             <div class="modal-header">
@@ -184,18 +211,31 @@
         </div>
     </div>
     
-    <div id="onboard" class="modal hidden onboard">
-        <div class="modal-card">
+    <!-- NEW: Dictionary Modal -->
+    <div id="dictionaryModal" class="modal">
+         <div class="modal-card modal-dictionary">
             <div class="modal-header">
-                <h3>Welcome to DreamWeavers!</h3>
-                <button id="closeOnboard" class="btn-icon close-modal" title="Close">X</button>
+                <h3 id="dictionaryWord"></h3>
+                <button class="btn-icon close-modal" title="Close">X</button>
             </div>
             <div class="modal-body">
-                <p>Let's create a magical story just for you!</p>
+                <p id="dictionaryDefinition"></p>
+            </div>
+        </div>
+    </div>
+    
+    <div id="onboard" class="modal hidden onboard">
+        <div class="modal-card">
+            <div class="modal-welcome-graphic">✨</div>
+            <div class="modal-header">
+                <h3>Welcome to DreamWeavers!</h3>
+            </div>
+            <div class="modal-body">
+                <p>Let's create a magical story just for you in 3 simple steps!</p>
                 <ul>
-                    <li><strong>Step 1:</strong> Enter your name.</li>
-                    <li><strong>Step 2:</strong> Pick a magical world and a mood.</li>
-                    <li><strong>Step 3:</strong> Hit "Create" and watch your story appear!</li>
+                    <li><strong>1. Enter your name</strong> (the story's hero!)</li>
+                    <li><strong>2. Pick a magical world</strong> and a mood.</li>
+                    <li><strong>3. Hit "Create"</strong> and watch your story appear!</li>
                 </ul>
                 <p>You can read, save, and share all your creations. Let's begin!</p>
             </div>
@@ -206,3 +246,4 @@
     </div>
 </body>
 </html>
+
