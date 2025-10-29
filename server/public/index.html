@@ -126,10 +126,11 @@
         <section id="storyDisplay" class="story-display hidden card">
             <div class="story-header">
                 <h2 id="storyTitle" class="story-title"></h2>
-                <div classs="story-image-container">
+                
+                <div class="story-image-wrapper">
                     <img id="storyImage" src="" alt="Generated story illustration" class="story-image hidden" />
-                    <button id="generateImageBtn" class="btn-secondary">🎨 Generate Story Image</button>
                 </div>
+                <button id="generateImageBtn" class="btn-secondary">🎨 Generate Story Image</button>
             </div>
             
             <div class="story-actions">
@@ -173,7 +174,10 @@
             </div>
             <div class="modal-body share-options">
                 <button class="share-btn copy-link" data-platform="copy">📋 Copy Story Text</button>
-                <button class="share-btn" data-platform="twitter">🐦 Share on X</button>
+                <button class="share-btn" data-platform="whatsapp">💬 Share on WhatsApp</button>
+                <button class="share-btn" data-platform="linkedin">🔗 Share on LinkedIn</button>
+                <button class="share-btn" data-platform="twitter">🐦 Share on X (Twitter)</button>
+                <button class="share-btn" data-platform="email">✉️ Share via Email</button>
                 <button class="share-btn" data-platform="facebook">f Share on Facebook</button>
                 <button class="download-pdf">📄 Download as PDF</button>
             </div>

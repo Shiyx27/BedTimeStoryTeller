@@ -624,42 +624,60 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Share modal actions: copy link (copy story text), tweet
+  // === UPDATED: Share modal actions ===
   document.querySelectorAll('.share-btn').forEach((b) => {
     b.addEventListener('click', async (e) => {
       const platform = b.dataset.platform;
       const title = document.getElementById('storyTitle').textContent || '';
       const body = document.getElementById('storyBody').innerText || '';
-      const text = `${title}\n\n${body}`.slice(0, 240);
+      const storyUrl = location.href;
+      
+      // Full text for copy, email, whatsapp
+      const fullText = `${title}\n\n${body}`;
+      // Shorter text for platforms with limits
+      const summary = body.slice(0, 150) + '...';
+
       if (b.classList.contains('copy-link')) {
         try {
-          await navigator.clipboard.writeText(text);
+          await navigator.clipboard.writeText(fullText);
           showToast('Story copied to clipboard');
         } catch (e) {
           showToast('Copy failed');
         }
+        hideModal('shareModal');
         return;
       }
+      
+      let url = '';
+      
       if (platform === 'twitter') {
-        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-          text
-        )}`;
-        window.open(url, '_blank');
-        return;
+        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title + ':\n' + summary)}&url=${encodeURIComponent(storyUrl)}`;
       }
+      
       if (platform === 'facebook') {
-        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-          location.href
-        )}&quote=${encodeURIComponent(title)}`;
-        window.open(url, '_blank');
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(storyUrl)}&quote=${encodeURIComponent(title)}`;
+      }
+      
+      if (platform === 'linkedin') {
+        url = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(storyUrl)}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(summary)}`;
+      }
+      
+      if (platform === 'whatsapp') {
+        url = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullText + '\n\nRead more at: ' + storyUrl)}`;
+      }
+      
+      if (platform === 'email') {
+        url = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent('I created a magical story with DreamWeavers!\n\n' + fullText + '\n\nRead it online:\n' + storyUrl)}`;
+        // No window.open for mailto, just set location
+        window.location.href = url;
+        hideModal('shareModal');
         return;
       }
-      if (platform === 'linkedin') {
-  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(location.href)}`;
-  window.open(url, '_blank');
-  return;
-}
 
+      if (url) {
+        window.open(url, '_blank');
+      }
+      hideModal('shareModal');
     });
     // attach sfx to share buttons
     attachSfx(b, 'click');
@@ -775,7 +793,7 @@ document.addEventListener('DOMContentLoaded', () => {
           );
           doc.text(lines, margin, 80);
         }
-        doc.save(`${title.replace(/[^a-z0-9]+/gi, '_')}.pdf`);
+        doc.save(`${title.replace(/[^a-z0, -9]+/gi, '_')}.pdf`);
         showToast('PDF downloaded');
       } catch (e) {
         console.warn('pdf err', e);
